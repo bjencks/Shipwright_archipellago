@@ -22,7 +22,7 @@ set (BUILD_SHARED_LIBS OFF CACHE STRING "install/link shared instead of static l
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(NOT CMAKE_VS_PLATFORM_NAME)
         if(CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64")
-            set(CMAKE_VS_PLATFORM_NAME "arm64")
+            set(CMAKE_VS_PLATFORM_NAME "ARM64")
         else()
             set(CMAKE_VS_PLATFORM_NAME "x64")
         endif()
