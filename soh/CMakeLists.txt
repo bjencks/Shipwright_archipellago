@@ -21,12 +21,18 @@ set (BUILD_SHARED_LIBS OFF CACHE STRING "install/link shared instead of static l
 ################################################################################
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(NOT CMAKE_VS_PLATFORM_NAME)
-        set(CMAKE_VS_PLATFORM_NAME "x64")
+        if(CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64")
+            set(CMAKE_VS_PLATFORM_NAME "arm64")
+        else()
+            set(CMAKE_VS_PLATFORM_NAME "x64")
+        endif()
     endif()
     message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
 
     if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
-        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"))
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "arm64"
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64"))
         message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
     endif()
 endif()
@@ -236,7 +242,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set_target_properties(${PROJECT_NAME} PROPERTIES
         VS_GLOBAL_KEYWORD "Win32Proj"
     )
-    if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+    if("${CMAKE_VS_PLATFORM_NAME}" MATCHES "^(x64|arm64|ARM64)$")
         set_target_properties(${PROJECT_NAME} PROPERTIES
             INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
         )
@@ -260,7 +266,7 @@ endif()
 ################################################################################
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     get_property(MSVC_RUNTIME_LIBRARY_DEFAULT TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY)
-    if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+    if("${CMAKE_VS_PLATFORM_NAME}" MATCHES "^(x64|arm64|ARM64)$")
         string(CONCAT "MSVC_RUNTIME_LIBRARY_STR"
             $<$<CONFIG:Debug>:
                 MultiThreadedDebug
@@ -416,7 +422,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE assets
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+    if("${CMAKE_VS_PLATFORM_NAME}" MATCHES "^(x64|arm64|ARM64)$")
         target_compile_definitions(${PROJECT_NAME} PRIVATE
             "$<$<CONFIG:Debug>:"
                 "_DEBUG;"
@@ -498,7 +504,7 @@ endif()
 ################################################################################
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PUBLIC "/Zc:__cplusplus")
-    if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+    if("${CMAKE_VS_PLATFORM_NAME}" MATCHES "^(x64|arm64|ARM64)$")
         target_compile_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Debug>:
                 /w;
@@ -535,7 +541,7 @@ if(MSVC)
             ${DEFAULT_CXX_EXCEPTION_HANDLING}
         )
     endif()
-    if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+    if("${CMAKE_VS_PLATFORM_NAME}" MATCHES "^(x64|arm64|ARM64)$")
         target_link_options(${PROJECT_NAME} PRIVATE
             $<$<CONFIG:Debug>:
                 /INCREMENTAL
@@ -723,7 +729,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     link_libraries(Opus::opus)
     find_package(OpusFile CONFIG REQUIRED)
     link_libraries(OpusFile::opusfile CONFIG REQUIRED)
-    if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64")
+    if("${CMAKE_VS_PLATFORM_NAME}" MATCHES "^(x64|arm64|ARM64)$")
         set(ADDITIONAL_LIBRARY_DEPENDENCIES
             "libultraship;"
             "ZAPDLib;"

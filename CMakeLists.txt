@@ -83,8 +83,13 @@ add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     include(CMake/automate-vcpkg.cmake)
 
-    set(VCPKG_TRIPLET x64-windows-static)
-    set(VCPKG_TARGET_TRIPLET x64-windows-static)
+    if(CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64" OR CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64")
+        set(VCPKG_TRIPLET arm64-windows-static)
+        set(VCPKG_TARGET_TRIPLET arm64-windows-static)
+    else()
+        set(VCPKG_TRIPLET x64-windows-static)
+        set(VCPKG_TARGET_TRIPLET x64-windows-static)
+    endif()
 
     vcpkg_bootstrap()
     vcpkg_install_packages(zlib bzip2 libzip libpng sdl2 sdl2-net glew glfw3 nlohmann-json tinyxml2 spdlog libogg libvorbis opus opusfile openssl valijson)
@@ -98,12 +103,18 @@ endif()
 ################################################################################
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     if(NOT CMAKE_VS_PLATFORM_NAME)
-        set(CMAKE_VS_PLATFORM_NAME "x64")
+        if(CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "ARM64")
+            set(CMAKE_VS_PLATFORM_NAME "arm64")
+        else()
+            set(CMAKE_VS_PLATFORM_NAME "x64")
+        endif()
     endif()
     message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
 
     if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"
-        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"))
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "Win32"
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "arm64"
+        OR "${CMAKE_VS_PLATFORM_NAME}" STREQUAL "ARM64"))
         message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
     endif()
 endif()
