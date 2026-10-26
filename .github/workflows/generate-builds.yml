@@ -349,3 +349,56 @@ jobs:
       with:
         key: ${{ steps.restore-cache-vcpkg.outputs.cache-primary-key }}
         path: vcpkg
+
+  build-windows-arm64:
+    needs: generate-soh-otr
+    runs-on: windows-11-arm
+    steps:
+    - name: Install dependencies
+      run: |
+        choco install ninja -y
+    - name: Git Checkout
+      uses: actions/checkout@v6
+      with:
+        submodules: true
+    - name: Restore Cached VCPKG folder
+      id: restore-cache-vcpkg
+      uses: actions/cache/restore@v5
+      with:
+        key: ${{ runner.os }}-arm64-vcpkg-${{ github.ref }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-arm64-vcpkg-${{ github.ref }}-
+          ${{ runner.os }}-arm64-vcpkg-
+        path: vcpkg
+    - name: Configure Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: arm64
+    - name: Download soh.o2r
+      uses: actions/download-artifact@v7
+      with:
+        name: soh.o2r
+        path: build-windows/soh
+    - name: Build SoH
+      env:
+        VCPKG_ROOT: ${{github.workspace}}/vcpkg
+      run: |
+        cmake -S . -B build-windows -G Ninja -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_BUILD_TYPE:STRING=Release -DBUILD_REMOTE_CONTROL=1
+        cmake --build build-windows --config Release --parallel 10
+
+        (cd build-windows && cpack)
+        cd ..
+        mv _packages/*.zip _packages/soh-windows-arm64.zip
+    - name: Unzip package
+      run: Expand-Archive -Path _packages/soh-windows-arm64.zip -DestinationPath soh-windows-arm64
+    - name: Upload build
+      uses: actions/upload-artifact@v7
+      with:
+        name: soh-windows-arm64
+        path: soh-windows-arm64
+    - name: Save Cache VCPKG folder
+      if: ${{ github.ref_name == github.event.repository.default_branch }}
+      uses: actions/cache/save@v5
+      with:
+        key: ${{ steps.restore-cache-vcpkg.outputs.cache-primary-key }}
+        path: vcpkg
