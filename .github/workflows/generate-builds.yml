@@ -191,7 +191,19 @@ jobs:
 
   build-windows:
     needs: generate-soh-otr
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            arch: x64
+            platform: x64
+            artifact: soh-windows
+          - runner: windows-11-arm
+            arch: arm64
+            platform: ARM64
+            artifact: soh-windows-arm64
+    runs-on: ${{ matrix.runner }}
     steps:
     - name: Install dependencies
       run: |
@@ -207,23 +219,23 @@ jobs:
         max-size: "2G"
         evict-old-files: job
         save: ${{ github.ref_name == github.event.repository.default_branch }}
-        key: ${{ runner.os }}-ccache-${{ github.ref }}-${{ github.sha }}
+        key: ${{ runner.os }}-${{ matrix.arch }}-ccache-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-ccache-${{ github.ref }}
-          ${{ runner.os }}-ccache
+          ${{ runner.os }}-${{ matrix.arch }}-ccache-${{ github.ref }}
+          ${{ runner.os }}-${{ matrix.arch }}-ccache
     - name: Restore Cached VCPKG folder
       id: restore-cache-vcpkg
       uses: actions/cache/restore@v5
       with:
-        key: ${{ runner.os }}-vcpkg-${{ github.ref }}-${{ github.sha }}
+        key: ${{ runner.os }}-${{ matrix.arch }}-vcpkg-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-vcpkg-${{ github.ref }}-
-          ${{ runner.os }}-vcpkg-
+          ${{ runner.os }}-${{ matrix.arch }}-vcpkg-${{ github.ref }}-
+          ${{ runner.os }}-${{ matrix.arch }}-vcpkg-
         path: vcpkg
     - name: Configure Developer Command Prompt
       uses: TheMrMilchmann/setup-msvc-dev@v4
       with:
-        arch: x64
+        arch: ${{ matrix.arch }}
     - name: Download soh.o2r
       uses: actions/download-artifact@v8
       with:
@@ -234,19 +246,19 @@ jobs:
         VCPKG_ROOT: ${{github.workspace}}/vcpkg
       run: |
         set $env:PATH="$env:USERPROFILE/.cargo/bin;$env:PATH"
-        cmake -S . -B build-windows -G Ninja -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DBUILD_REMOTE_CONTROL=1
+        cmake -S . -B build-windows -G Ninja -DCMAKE_MAKE_PROGRAM=ninja -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_VS_PLATFORM_NAME=${{ matrix.platform }} -DBUILD_REMOTE_CONTROL=1
         cmake --build build-windows --config Release --parallel 10
 
         (cd build-windows && cpack)
         cd ..
-        mv _packages/*.zip _packages/soh-windows.zip
+        mv _packages/*.zip _packages/${{ matrix.artifact }}.zip
     - name: Unzip package
-      run: Expand-Archive -Path _packages/soh-windows.zip -DestinationPath soh-windows
+      run: Expand-Archive -Path _packages/${{ matrix.artifact }}.zip -DestinationPath ${{ matrix.artifact }}
     - name: Upload build
       uses: actions/upload-artifact@v7
       with:
-        name: soh-windows
-        path: soh-windows
+        name: ${{ matrix.artifact }}
+        path: ${{ matrix.artifact }}
     - name: Save Cache VCPKG folder
       if: ${{ github.ref_name == github.event.repository.default_branch }}
       uses: actions/cache/save@v5
