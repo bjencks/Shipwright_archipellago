@@ -280,7 +280,16 @@ function(quiet_dependency_tree dir)
     endforeach()
 endfunction()
 
+# torch's Windows arch check only accepts x64/Win32 and the platform name isn't used for
+# anything else there, so present ARM64 builds as x64 while configuring it.
+if(SOH_WINDOWS_ARM64)
+    set(_soh_vs_platform_name "${CMAKE_VS_PLATFORM_NAME}")
+    set(CMAKE_VS_PLATFORM_NAME "x64")
+endif()
 add_subdirectory(torch SYSTEM)
+if(SOH_WINDOWS_ARM64)
+    set(CMAKE_VS_PLATFORM_NAME "${_soh_vs_platform_name}")
+endif()
 quiet_dependency_tree(${CMAKE_CURRENT_SOURCE_DIR}/torch)
 
 target_compile_definitions(torch INTERFACE YAML_CPP_STATIC_DEFINE)
